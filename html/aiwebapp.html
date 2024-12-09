@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Falling Objects Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #87ceeb;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(to bottom, #aaffff, #ffffff);
+    }
+    .game-over, .game-title, .restart-button {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: #ff0000;
+      font-weight: bold;
+      display: none;
+    }
+    
+    .game-title {
+      font-size: 2.5em;
+      color: #228b22;
+      text-align: center;
+      display: block;
+    }
+    .restart-button {
+      font-size: 1.5em;
+      background-color: #228b22;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+      display: none;
+    }
+    .restart-button:hover {
+      background-color: #006400;
+    }
+    .game-over{
+        top:100px !important;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div class="game-title" id="gameTitle">Falling Objects Game - Press Arrow Keys to Start</div>
+<div class="game-over" id="gameOverText">Game Over!</div>
+<button class="restart-button" id="restartButton">Restart Game</button>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas size
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // Game Variables
+  let player = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 50,
+    width: 50,
+    height: 50,
+    speed: 7
+  };
+
+  let fallingObjects = [];
+  let score = 0;
+  let gameOver = false;
+  let gameStarted = false;
+  let lastUpdateTime = Date.now();
+
+  const objectWidth = 30;
+  const objectHeight = 30;
+
+  // Create falling objects
+  function createFallingObjects() {
+    let x = Math.random() * (canvas.width - objectWidth);
+    let speed = Math.random() * 3 + 2; // Falling speed
+    fallingObjects.push({ x: x, y: -objectHeight, width: objectWidth, height: objectHeight, speed: speed });
+  }
+
+  // Update the player movement
+  function movePlayer() {
+    if (keys['ArrowLeft'] && player.x > 0) {
+      player.x -= player.speed;
+    }
+    if (keys['ArrowRight'] && player.x + player.width < canvas.width) {
+      player.x += player.speed;
+    }
+  }
+
+  // Check for collision with falling objects
+  function checkCollision() {
+    fallingObjects.forEach(object => {
+      if (object.y + object.height >= player.y && object.y <= player.y + player.height &&
+          object.x + object.width >= player.x && object.x <= player.x + player.width) {
+        gameOver = true;
+        document.getElementById('gameOverText').style.display = 'block';
+        document.getElementById('restartButton').style.display = 'block';
+      }
+    });
+  }
+
+  // Update the falling objects
+  function updateFallingObjects() {
+    fallingObjects.forEach(object => {
+      object.y += object.speed;
+
+      // Remove object if it goes past the screen
+      if (object.y > canvas.height) {
+        object.y = -objectHeight;
+        object.x = Math.random() * (canvas.width - objectWidth);
+      }
+    });
+  }
+
+  // Draw all elements on the screen
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw player
+    ctx.fillStyle = '#ff6347';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Draw falling objects
+    fallingObjects.forEach(object => {
+      ctx.fillStyle = '#228b22';
+      ctx.fillRect(object.x, object.y, object.width, object.height);
+    });
+
+    // Draw score
+    ctx.fillStyle = '#000';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + score, 10, 30);
+  }
+
+  // Update the game
+  function updateGame() {
+    if (gameOver) return;
+
+    // Calculate score based on time survived
+    let now = Date.now();
+    score = Math.floor((now - lastUpdateTime) / 1000);
+
+    movePlayer();
+    updateFallingObjects();
+    checkCollision();
+    draw();
+
+    requestAnimationFrame(updateGame);
+  }
+
+  // Keydown event listener for movement
+  const keys = {};
+  document.addEventListener('keydown', function(e) {
+    keys[e.key] = true;
+
+    // Start the game when any arrow key is pressed
+    if (!gameStarted && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      gameStarted = true;
+      document.getElementById('gameTitle').style.display = 'none';  // Hide title text
+      lastUpdateTime = Date.now();
+      setInterval(createFallingObjects, 1000); // Add a new object every second
+      updateGame();
+    }
+  });
+
+  // Keyup event listener for movement
+  document.addEventListener('keyup', function(e) {
+    keys[e.key] = false;
+  });
+
+  // Restart the game
+  function restartGame() {
+    gameOver = false;
+    score = 0;
+    fallingObjects = [];
+    document.getElementById('gameOverText').style.display = 'none';
+    document.getElementById('restartButton').style.display = 'none';
+    gameStarted = false;
+    document.getElementById('gameTitle').style.display = 'block';  // Show title text again
+  }
+
+  // Restart button event listener
+  document.getElementById('restartButton').addEventListener('click', restartGame);
+
+</script>
+
+</body>
+</html>
